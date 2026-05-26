@@ -3,12 +3,12 @@
 services:
   postgres:
     image: postgres:16
-    container_name: user-management-postgres
+    container_name: ${POSTGRES_CONTAINER_NAME}
     
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ot_P2tHj
-      POSTGRES_DB: user_management
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     
     ports:
       - "5432:5432"
