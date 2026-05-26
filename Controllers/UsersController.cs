@@ -34,7 +34,7 @@ public class UsersController : ControllerBase
             );
     }
     
-    [HttpGet]
+    [HttpGet("{id:int}")]
     public ActionResult<UserResponseDto> GetUserById(int id)
     {
         var user = _userService.GetById(id);
