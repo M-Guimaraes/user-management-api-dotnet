@@ -1,0 +1,41 @@
+# Build
+bin/
+obj/
+
+# Rider
+.idea/
+
+# VS Code
+.vscode/
+
+# User files
+*.user
+*.suo
+
+# Logs
+*.log
+
+# Environment
+.env
+
+# ASP.NET secrets
+secrets.json
+
+# MacOS
+.DS_Store
+
+# EF Core local database
+*.db
+*.sqlite
+
+# Publish output
+publish/
+
+# NuGet
+*.nupkg
+
+# Docker
+docker-data/
+
+# App settings sensíveis
+appsettings.Development.json

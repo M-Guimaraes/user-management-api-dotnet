@@ -1,4 +1,5 @@
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using UserManagementApi.DTOs;
@@ -8,6 +9,7 @@ namespace UserManagementApi.Controllers;
 
 [ApiController]
 [Route("users")]
+[Authorize]
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -24,7 +26,7 @@ public class UsersController : ControllerBase
         var userResponse = new UserResponseDto {
             Id = createdUser.Id,
             Name = createdUser.Name,
-            Email = createdUser.Email
+            Email = createdUser.Email,
         };
         
         return CreatedAtAction(
