@@ -1,3 +1,5 @@
+using AutoMapper;
+
 using UserManagementApi.DTOs;
 using UserManagementApi.Repositories;
 
@@ -6,6 +8,7 @@ namespace UserManagementApi.Services;
 public class AuthService(
     IUserRepository userRepository, 
     IRefreshTokenRepository refreshTokenRepository, 
+    IMapper mapper,
     IJwtService jwtService) : IAuthService
 {
 
@@ -55,12 +58,10 @@ public class AuthService(
         
         await refreshTokenRepository.SaveChangesAsync();
         
-        var authUser = new AuthResponseDto {
-            Email = user.Email,
-            Name = user.Name,
-            Token = token,
-            RefreshToken = refreshToken,
-        };
+        var authUser = mapper.Map<AuthResponseDto>(user);
+        
+        authUser.RefreshToken = refreshToken;
+        authUser.Token = token;
         
         return authUser;       
     }
@@ -74,13 +75,13 @@ public class AuthService(
         if (stored.Revoked) return null;
         
         if (stored.ExpiresAt < DateTime.UtcNow) return null;       
+
+        var authUser = mapper.Map<AuthResponseDto>(stored.User);
+
+        authUser.Token = jwtService.GenerateToken(stored.User);
+        authUser.RefreshToken = dto.RefreshToken;
         
-        return new AuthResponseDto {
-            Email = stored.User.Email,
-            Name = stored.User.Name,
-            Token = jwtService.GenerateToken(stored.User),
-            RefreshToken = dto.RefreshToken,
-        };
+        return authUser;      
     }
 
     public async Task<bool> Logout(RefreshTokenDto dto)

@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 using UserManagementApi.Data;
+using UserManagementApi.Mappings;
+using UserManagementApi.Repositories;
 using UserManagementApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +36,7 @@ builder.Services.AddSwaggerGen(options =>
             Description =
                 "Digite o token JWT assim: Bearer {seu token}"
         });
+    
     options.AddSecurityRequirement(
         new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
         {
@@ -65,9 +68,7 @@ builder.Services
     .AddJwtBearer(options =>
 
     {
-
         options.TokenValidationParameters =
-
             new TokenValidationParameters
             {
                 ValidateIssuer = true,
@@ -87,9 +88,17 @@ builder.Services
             };
     });
 
+// Data Mapper
+builder.Services.AddAutoMapper(typeof(UserProfile));
+
+// Services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+
+// Repositories
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
 var app = builder.Build();
 
@@ -98,6 +107,8 @@ if (app.Environment.IsDevelopment()) {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+
 
 app.UseHttpsRedirection();
 

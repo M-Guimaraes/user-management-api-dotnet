@@ -1,20 +1,25 @@
+using AutoMapper;
+
 using UserManagementApi.DTOs;
 using UserManagementApi.Repositories;
 
 namespace UserManagementApi.Services;
 
-public class UserService(IUserRepository userRepository) : IUserService
+public class UserService(IUserRepository userRepository, IMapper mapper) : IUserService
 {
 
     public async Task<IEnumerable<User>> GetAllAsync()
     {
-        return await userRepository.GetAllAsync();
+        var users = await userRepository.GetAllAsync();
         
+        return mapper.Map<IEnumerable<User>>(users);
     }
 
     public async Task<User?> GetByIdAsync(int id)
     {
-        return  await userRepository.GetByIdAsync(id);
+        User? user = await userRepository.GetByIdAsync(id);
+
+        return user == null ? null : mapper.Map<User>(user);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -32,11 +37,11 @@ public class UserService(IUserRepository userRepository) : IUserService
     public async Task<bool> UpdateAsync(int id, UpdateUserDto dto)
     {
         User? user = await userRepository.GetByIdAsync(id);
-        if (user == null)
-            return false;
+        
+        if (user == null) return false;
 
-        user.Name = dto.Name;
-        user.Email = dto.Email;
+        mapper.Map(dto, user);
+ 
         user.UpdatedAt = DateTime.UtcNow;
 
         await userRepository.SaveChangesAsync();
