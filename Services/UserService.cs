@@ -1,41 +1,37 @@
-using Microsoft.EntityFrameworkCore;
-
-using UserManagementApi.Data;
 using UserManagementApi.DTOs;
+using UserManagementApi.Repositories;
 
 namespace UserManagementApi.Services;
 
-public class UserService(AppDbContext context) : IUserService
+public class UserService(IUserRepository userRepository) : IUserService
 {
 
     public async Task<IEnumerable<User>> GetAllAsync()
     {
-        return await context.Users.AsNoTracking().ToListAsync();
+        return await userRepository.GetAllAsync();
         
     }
 
     public async Task<User?> GetByIdAsync(int id)
     {
-        return  await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
+        return  await userRepository.GetByIdAsync(id);
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        User? user = await context.Users.FirstOrDefaultAsync(u => u.Id == id);
+        User? user = await userRepository.GetByIdAsync(id);
 
         if (user == null) return false;
         
-        context.Remove(user);
+        await userRepository.DeleteAsync(user);
         
-        await context.SaveChangesAsync();
-            
         return true;
 
     }
 
     public async Task<bool> UpdateAsync(int id, UpdateUserDto dto)
     {
-        User? user = await context.Users.FirstOrDefaultAsync(u => u.Id == id);
+        User? user = await userRepository.GetByIdAsync(id);
         if (user == null)
             return false;
 
@@ -43,7 +39,7 @@ public class UserService(AppDbContext context) : IUserService
         user.Email = dto.Email;
         user.UpdatedAt = DateTime.UtcNow;
 
-        await context.SaveChangesAsync();
+        await userRepository.SaveChangesAsync();
 
         return true;
     }

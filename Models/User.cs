@@ -8,15 +8,16 @@ public class User
     
     [Required]
     [MinLength(3)]
+    [MaxLength(50)]
     public string Name { get; set; } = string.Empty;
     
     [Required]
     [EmailAddress]
-    
+    [MaxLength(254)]
     public string Email { get; set; } = string.Empty;
     
     [Required]
-    [MinLength(6)]
+    [MaxLength(100)]
     [DataType(DataType.Password)]
     public string PasswordHash { get; set; } = string.Empty;
 
@@ -25,4 +26,7 @@ public class User
     
     [DataType(DataType.DateTime)]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    
+    public ICollection<RefreshToken> RefreshTokens { get; set; }
+        = new List<RefreshToken>();
 }

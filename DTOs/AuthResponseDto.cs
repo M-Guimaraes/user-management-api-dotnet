@@ -8,6 +8,9 @@ public class AuthResponseDto
     public string Token { get; set; } = string.Empty;
     
     [Required]
+    public string RefreshToken { get; set; } = string.Empty;
+    
+    [Required]
     public string Email { get; set; } = string.Empty;  
     
     [Required]

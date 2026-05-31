@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using UserManagementApi.DTOs;
@@ -14,10 +13,9 @@ public class AuthController(IAuthService authService) : Controller
     [HttpPost("register")]
     public async Task<ActionResult<bool>> Register(RegisterDto dto)
     {
-        
-        bool registered = await authService.Register(dto);
+        bool result = await authService.Register(dto);
 
-        if (!registered) {
+        if (!result) {
             return BadRequest();
         }
         
@@ -27,23 +25,32 @@ public class AuthController(IAuthService authService) : Controller
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
     {
-        AuthResponseDto? user = await authService.Login(dto);
+        AuthResponseDto? result = await authService.Login(dto);
         
-        if (user == null) {
+        if (result == null) {
             return Unauthorized();
         }
         
-        return Ok(user);        
+        return Ok(result);        
+    }
+
+    [HttpPost("refresh")]
+    public async Task<ActionResult<AuthResponseDto>> RefreshToken(RefreshTokenDto dto)
+    {
+        AuthResponseDto? result =  await authService.RefreshToken(dto);
+        
+        if (result == null) return Unauthorized();
+
+        return Ok(result);       
     }
     
-    [Authorize]
-    [HttpGet("me")]
-    public IActionResult Me()
+    [HttpPost("logout")]
+    public async Task<ActionResult<bool>> Logout(RefreshTokenDto dto)
     {
-        return Ok(User.Claims.Select(c => new
-        {
-            c.Type,
-            c.Value,
-        }));
+        bool result = await authService.Logout(dto);
+        
+        if (!result) return NotFound();
+        
+        return NoContent();
     }
 }
