@@ -8,22 +8,16 @@ namespace UserManagementApi.Controllers;
 
 [ApiController]
 [Route("auth")]
-public class AuthController : Controller
+public class AuthController(IAuthService authService) : Controller
 {
-    private readonly IAuthService _authService;
-    
-    public AuthController(IAuthService authService)
-    {
-        _authService = authService;
-    }
-    
+
     [HttpPost("register")]
     public async Task<ActionResult<bool>> Register(RegisterDto dto)
     {
         
-        var registered = await _authService.Register(dto);
+        bool registered = await authService.Register(dto);
 
-        if (registered) {
+        if (!registered) {
             return BadRequest();
         }
         
@@ -33,7 +27,7 @@ public class AuthController : Controller
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
     {
-        var user = await _authService.Login(dto);
+        AuthResponseDto? user = await authService.Login(dto);
         
         if (user == null) {
             return Unauthorized();
@@ -49,7 +43,7 @@ public class AuthController : Controller
         return Ok(User.Claims.Select(c => new
         {
             c.Type,
-            c.Value
+            c.Value,
         }));
     }
 }

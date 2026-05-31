@@ -5,50 +5,40 @@ using UserManagementApi.DTOs;
 
 namespace UserManagementApi.Services;
 
-public class AuthService : IAuthService
+public class AuthService(AppDbContext context, IJwtService jwtService) : IAuthService
 {
 
-    private readonly AppDbContext _context;
-    
-    private readonly IJwtService _jwtService;
-    
-    public AuthService(AppDbContext context, IJwtService jwtService)
-    {
-        _context = context;
-        _jwtService = jwtService;
-    }
-    
     public async Task<bool> Register(RegisterDto dto)
     {
         
-        var registered = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        User? registered = await context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
         if (registered != null) {
             return false;
         }
         
-        var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+        string? passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
         
-        await _context.Users.AddAsync(new User {
+        await context.Users.AddAsync(new User {
             Name = dto.Name,
             Email = dto.Email,
-            PasswordHash = passwordHash
+            PasswordHash = passwordHash,
         });
         
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return true;
     }
 
     public async Task<AuthResponseDto?> Login(LoginDto dto)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
         
         if (user == null) return null;
 
         var passwordMatch = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
         
-        var token = _jwtService.GenerateToken(user);
+        var token = jwtService.GenerateToken(user);
         
         if (!passwordMatch) return null;
 
