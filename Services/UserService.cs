@@ -14,52 +14,36 @@ public class UserService(AppDbContext context) : IUserService
         
     }
 
-    public User Create (CreateUserDto dto)
+    public async Task<User?> GetByIdAsync(int id)
     {
-        var newUser = new User
-        {
-            Name = dto.Name,
-            Email = dto.Email,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-        };
-        
-        context.Users.Add(newUser);
-        context.SaveChanges();
-        
-        return newUser;
+        return  await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
     }
 
-    public User? GetById(int id)
+    public async Task<bool> DeleteAsync(int id)
     {
-        return context.Users.AsNoTracking().FirstOrDefault(u => u.Id == id);
-    }
-    
-    public bool Delete(int id)
-    {
-        User? user = context.Users.FirstOrDefault(u => u.Id == id);
+        User? user = await context.Users.FirstOrDefaultAsync(u => u.Id == id);
+
+        if (user == null) return false;
         
-        if (user != null)
-        {
-            context.Remove(user);
-            context.SaveChanges();
-            return true;
-        }
+        context.Remove(user);
+        
+        await context.SaveChangesAsync();
+            
+        return true;
 
-        return false;
     }
 
-    public bool  Update(int id, UpdateUserDto dto)
+    public async Task<bool> UpdateAsync(int id, UpdateUserDto dto)
     {
-        User? user = context.Users.FirstOrDefault(u => u.Id == id);
+        User? user = await context.Users.FirstOrDefaultAsync(u => u.Id == id);
         if (user == null)
             return false;
-        
+
         user.Name = dto.Name;
         user.Email = dto.Email;
         user.UpdatedAt = DateTime.UtcNow;
-        
-        context.SaveChanges();
+
+        await context.SaveChangesAsync();
 
         return true;
     }

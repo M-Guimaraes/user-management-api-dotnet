@@ -15,9 +15,10 @@ public class UsersController(IUserService userService) : ControllerBase
 
    
     [HttpGet("{id:int}")]
-    public ActionResult<UserResponseDto> GetUserById(int id)
+    public async Task<ActionResult<UserResponseDto>> GetUserById(int id)
     {
-        User? user = userService.GetById(id);
+        User? user = await userService.GetByIdAsync(id);
+        
         if (user == null)
             return NotFound();
 
@@ -43,9 +44,9 @@ public class UsersController(IUserService userService) : ControllerBase
     }
 
     [HttpPut]
-    public ActionResult<User> UpdateUser(int id, [FromBody] UpdateUserDto dto)
+    public async Task<ActionResult<User>> UpdateUser(int id, [FromBody] UpdateUserDto dto)
     {
-        bool updated = userService.Update(id, dto);
+        bool updated = await userService.UpdateAsync(id, dto);
 
         if (!updated)
             return NotFound();
@@ -54,9 +55,9 @@ public class UsersController(IUserService userService) : ControllerBase
     }
 
     [HttpDelete]
-    public IActionResult DeleteUser(int id)
+    public async Task<ActionResult<bool>> DeleteUser(int id)
     {
-        bool deleted = userService.Delete(id);
+        bool deleted = await userService.DeleteAsync(id);
         
         if (!deleted)
             return NotFound();
