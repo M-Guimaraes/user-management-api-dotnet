@@ -6,8 +6,6 @@ public interface IUserService
 {
     Task<IEnumerable<User>> GetAllAsync();
     
-    User Create(CreateUserDto dto);
-    
     User? GetById(int id);
     
     bool Delete(int id);

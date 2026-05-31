@@ -5,19 +5,12 @@ using UserManagementApi.DTOs;
 
 namespace UserManagementApi.Services;
 
-public class UserService : IUserService
+public class UserService(AppDbContext context) : IUserService
 {
-    
-    private readonly AppDbContext _context;
-    
-    public UserService(AppDbContext context)
-    {
-        _context = context;
-    }
 
     public async Task<IEnumerable<User>> GetAllAsync()
     {
-        return await _context.Users.AsNoTracking().ToListAsync();
+        return await context.Users.AsNoTracking().ToListAsync();
         
     }
 
@@ -26,28 +19,30 @@ public class UserService : IUserService
         var newUser = new User
         {
             Name = dto.Name,
-            Email = dto.Email
+            Email = dto.Email,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
         };
         
-        _context.Users.Add(newUser);
-        _context.SaveChanges();
+        context.Users.Add(newUser);
+        context.SaveChanges();
         
         return newUser;
     }
 
     public User? GetById(int id)
     {
-        return _context.Users.AsNoTracking().FirstOrDefault(u => u.Id == id);
+        return context.Users.AsNoTracking().FirstOrDefault(u => u.Id == id);
     }
     
     public bool Delete(int id)
     {
-        var user = _context.Users.FirstOrDefault(u => u.Id == id);
+        User? user = context.Users.FirstOrDefault(u => u.Id == id);
         
         if (user != null)
         {
-            _context.Remove(user);
-            _context.SaveChanges();
+            context.Remove(user);
+            context.SaveChanges();
             return true;
         }
 
@@ -56,14 +51,15 @@ public class UserService : IUserService
 
     public bool  Update(int id, UpdateUserDto dto)
     {
-        var user = _context.Users.FirstOrDefault(u => u.Id == id);
+        User? user = context.Users.FirstOrDefault(u => u.Id == id);
         if (user == null)
             return false;
         
         user.Name = dto.Name;
         user.Email = dto.Email;
+        user.UpdatedAt = DateTime.UtcNow;
         
-        _context.SaveChanges();
+        context.SaveChanges();
 
         return true;
     }
