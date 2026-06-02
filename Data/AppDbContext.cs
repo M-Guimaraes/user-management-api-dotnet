@@ -18,7 +18,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         
         // Refresh Tokens
         modelBuilder.Entity<RefreshToken>().ToTable("refresh_tokens");
-        modelBuilder.Entity<RefreshToken>().HasQueryFilter(rt => !rt.User.IsDeleted && rt.Revoked);
+        // Exclude revoked tokens and tokens belonging to deleted users
+        modelBuilder.Entity<RefreshToken>().HasQueryFilter(rt => !rt.Revoked && !rt.User.IsDeleted);
 
     }
 }
