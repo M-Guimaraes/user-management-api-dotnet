@@ -4,7 +4,8 @@ public class RefreshToken
 {
     public int Id { get; set; }
 
-    public string Token { get; set; }
+    // Store only the hash of the refresh token for security
+    public string TokenHash { get; set; } = string.Empty;
 
     public DateTime ExpiresAt { get; set; }
 

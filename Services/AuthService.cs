@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using AutoMapper;
 
 using UserManagementApi.DTOs;
@@ -48,12 +50,12 @@ public class AuthService(
         
         string token = jwtService.GenerateToken(user);
         
-        string refreshToken = Guid.NewGuid().ToString();
+        string refreshToken = GenerateSecureToken();
 
         var addUser = new RefreshToken {
             UserId = user.Id,
             ExpiresAt = DateTime.UtcNow.AddDays(7),
-            Token = refreshToken,
+            TokenHash = ComputeHash(refreshToken),
         };
         
         await refreshTokenRepository.AddAsync(addUser, cancellationToken);
@@ -73,17 +75,29 @@ public class AuthService(
         RefreshToken? stored = await refreshTokenRepository.GetByUserTokenAsync(dto.RefreshToken, cancellationToken);
 
         if (stored == null) return null;
-        
         if (stored.Revoked) return null;
-        
-        if (stored.ExpiresAt < DateTime.UtcNow) return null;       
+        if (stored.ExpiresAt < DateTime.UtcNow) return null;
+
+        // rotate refresh token: revoke the old one and create a new one
+        stored.Revoked = true;
+
+        string newRefreshToken = GenerateSecureToken();
+
+        var newToken = new RefreshToken
+        {
+            UserId = stored.UserId,
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            TokenHash = ComputeHash(newRefreshToken),
+        };
+
+        await refreshTokenRepository.AddAsync(newToken, cancellationToken);
+        await refreshTokenRepository.SaveChangesAsync(cancellationToken);
 
         var authUser = mapper.Map<AuthResponseDto>(stored.User);
-
         authUser.Token = jwtService.GenerateToken(stored.User);
-        authUser.RefreshToken = dto.RefreshToken;
-        
-        return authUser;      
+        authUser.RefreshToken = newRefreshToken;
+
+        return authUser;
     }
 
     public async Task<bool> Logout(RefreshTokenDto dto, CancellationToken cancellationToken)
@@ -94,10 +108,25 @@ public class AuthService(
         
         stored.Revoked = true;
         
-        await refreshTokenRepository.SaveChangesAsync();
+        await refreshTokenRepository.SaveChangesAsync(cancellationToken);
         
         return true;       
     }
 
+
+    private static string ComputeHash(string token)
+    {
+        using var sha = SHA256.Create();
+        byte[] bytes = Encoding.UTF8.GetBytes(token);
+        byte[] hashed = sha.ComputeHash(bytes);
+        return Convert.ToHexString(hashed);
+    }
+
+    private static string GenerateSecureToken(int size = 64)
+    {
+        byte[] data = new byte[size];
+        RandomNumberGenerator.Fill(data);
+        return Convert.ToBase64String(data).TrimEnd('=');
+    }
 
 }
