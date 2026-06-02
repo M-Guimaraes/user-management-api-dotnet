@@ -25,28 +25,33 @@ public class UserService(IUserRepository userRepository, IMapper mapper) : IUser
     {
         User? user = await userRepository.GetByIdAsync(id, cancellationToken);
 
-        return user == null ? null : mapper.Map<UserResponseDto>(user);
+        if (user == null) {
+            throw new KeyNotFoundException($"User with id {id} not found");
+        }
+        
+        return mapper.Map<UserResponseDto>(user);
     }
 
-    public async Task<bool> Delete(int id, CancellationToken cancellationToken)
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken)
     {
         User? user = await userRepository.GetByIdAsync(id, cancellationToken);
 
-        if (user == null) return false;
+        if (user == null) {
+            throw new KeyNotFoundException($"User with id {id} not found");
+        }
         
         userRepository.Delete(user);
-        
-        await userRepository.SaveChangesAsync(cancellationToken);       
-        
-        return true;
 
+        await userRepository.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<bool> Update(int id, UpdateUserDto dto, CancellationToken cancellationToken)
+    public async Task UpdateAsync(int id, UpdateUserDto dto, CancellationToken cancellationToken)
     {
         User? user = await userRepository.GetByIdAsync(id, cancellationToken);
-        
-        if (user == null) return false;
+
+        if (user == null) {
+            throw new KeyNotFoundException($"User with id {id} not found");       
+        }
         
         if (dto.Name is not null)
         {
@@ -58,12 +63,10 @@ public class UserService(IUserRepository userRepository, IMapper mapper) : IUser
             user.Email = dto.Email;
         }
 
-        mapper.Map(user, dto);
+        mapper.Map(dto, user);
  
         user.UpdatedAt = DateTime.UtcNow;
 
         await userRepository.SaveChangesAsync(cancellationToken);
-
-        return true;
     }
 }

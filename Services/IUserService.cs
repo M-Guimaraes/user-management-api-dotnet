@@ -9,7 +9,7 @@ public interface IUserService
     
     Task<UserResponseDto?> GetByIdAsync(int id, CancellationToken cancellationToken);
     
-    Task<bool> Delete(int id, CancellationToken cancellationToken);
-    
-    Task<bool> Update(int id, UpdateUserDto dto, CancellationToken cancellationToken);
+    Task DeleteAsync(int id, CancellationToken cancellationToken);
+
+    Task UpdateAsync(int id, UpdateUserDto dto, CancellationToken cancellationToken);
 }

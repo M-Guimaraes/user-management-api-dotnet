@@ -40,22 +40,16 @@ public class UsersController(IUserService userService) : ControllerBase
     [HttpPatch("{id:int}")]
     public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
     {
-        bool updated = await userService.Update(id, dto, cancellationToken);
+        await userService.UpdateAsync(id, dto, cancellationToken);
 
-        if (!updated)
-            return NotFound();
-        
         return NoContent();
     }
 
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> DeleteUser(int id, CancellationToken cancellationToken)
     {
-        bool deleted = await userService.Delete(id, cancellationToken);
-        
-        if (!deleted)
-            return NotFound();
-        
+        await userService.DeleteAsync(id, cancellationToken);
+
         return NoContent();
     }
 }
