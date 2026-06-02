@@ -27,7 +27,6 @@ public class UsersController(IUserService userService) : ControllerBase
     }
         
     [HttpGet]
-    [AllowAnonymous]
     public async Task<ActionResult<PagedResult<UserResponseDto>> > GetUsers(
         [FromQuery] UserQueryDto query, 
         CancellationToken cancellationToken
@@ -39,7 +38,6 @@ public class UsersController(IUserService userService) : ControllerBase
     }
 
     [HttpPatch("{id:int}")]
-    [AllowAnonymous]
     public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
     {
         bool updated = await userService.Update(id, dto, cancellationToken);
@@ -51,7 +49,6 @@ public class UsersController(IUserService userService) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [AllowAnonymous]
     public async Task<ActionResult> DeleteUser(int id, CancellationToken cancellationToken)
     {
         bool deleted = await userService.Delete(id, cancellationToken);
