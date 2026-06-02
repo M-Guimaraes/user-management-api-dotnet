@@ -36,7 +36,7 @@ namespace UserManagementApi.Migrations
                     b.Property<bool>("Revoked")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("Token")
+                    b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasColumnType("text");
 
