@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using UserManagementApi.Common;
 using UserManagementApi.DTOs;
 using UserManagementApi.Services;
 
@@ -15,38 +16,33 @@ public class UsersController(IUserService userService) : ControllerBase
 
    
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<UserResponseDto>> GetUserById(int id)
+    public async Task<ActionResult<UserResponseDto>> GetUserById(int id, CancellationToken cancellationToken)
     {
-        User? user = await userService.GetByIdAsync(id);
+        UserResponseDto? userResponse = await userService.GetByIdAsync(id, cancellationToken);
         
-        if (user == null)
+        if (userResponse == null)
             return NotFound();
-
-        var userResponse = new UserResponseDto {
-            Id = user.Id,
-            Name = user.Name,
-            Email = user.Email,
-        };
         
         return Ok(userResponse);
     }
         
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserResponseDto>> > GetUsers()
+    [AllowAnonymous]
+    public async Task<ActionResult<PagedResult<UserResponseDto>> > GetUsers(
+        [FromQuery] UserQueryDto query, 
+        CancellationToken cancellationToken
+        )
     {
-        var users = await userService.GetAllAsync();
-        var usersResponse = users.Select(user => new UserResponseDto {
-            Id = user.Id,
-            Name = user.Name,
-            Email = user.Email,
-        });
+        var usersResponse = await userService.GetAllAsync(query, cancellationToken);
+        
         return Ok(usersResponse);
     }
 
-    [HttpPut]
-    public async Task<ActionResult<User>> UpdateUser(int id, [FromBody] UpdateUserDto dto)
+    [HttpPatch("{id:int}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserDto dto, CancellationToken cancellationToken)
     {
-        bool updated = await userService.UpdateAsync(id, dto);
+        bool updated = await userService.Update(id, dto, cancellationToken);
 
         if (!updated)
             return NotFound();
@@ -54,10 +50,11 @@ public class UsersController(IUserService userService) : ControllerBase
         return NoContent();
     }
 
-    [HttpDelete]
-    public async Task<ActionResult<bool>> DeleteUser(int id)
+    [HttpDelete("{id:int}")]
+    [AllowAnonymous]
+    public async Task<ActionResult> DeleteUser(int id, CancellationToken cancellationToken)
     {
-        bool deleted = await userService.DeleteAsync(id);
+        bool deleted = await userService.Delete(id, cancellationToken);
         
         if (!deleted)
             return NotFound();

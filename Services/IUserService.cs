@@ -1,14 +1,15 @@
+using UserManagementApi.Common;
 using UserManagementApi.DTOs;
 
 namespace UserManagementApi.Services;
 
 public interface IUserService
 {
-    Task<IEnumerable<User>> GetAllAsync();
+    Task<PagedResult<UserResponseDto>> GetAllAsync(UserQueryDto query, CancellationToken cancellationToken);
     
-    Task<User?> GetByIdAsync(int id);
+    Task<UserResponseDto?> GetByIdAsync(int id, CancellationToken cancellationToken);
     
-    Task<bool> DeleteAsync(int id);
+    Task<bool> Delete(int id, CancellationToken cancellationToken);
     
-    Task<bool> UpdateAsync(int id, UpdateUserDto dto);
+    Task<bool> Update(int id, UpdateUserDto dto, CancellationToken cancellationToken);
 }

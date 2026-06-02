@@ -1,18 +1,21 @@
+using UserManagementApi.Common;
+using UserManagementApi.DTOs;
+
 namespace UserManagementApi.Repositories;
 
 public interface IUserRepository
 {
-    Task<IEnumerable<User>> GetAllAsync();
+    Task<PagedResult<User>> GetAllAsync(UserQueryDto query, CancellationToken cancellationToken);
 
-    Task<User?> GetByIdAsync(int id);
+    Task<User?> GetByIdAsync(int id, CancellationToken cancellationToken);
 
-    Task<User?> GetByEmailAsync(string email);
+    Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken);
 
-    Task AddAsync(User user);
+    Task AddAsync(User user, CancellationToken cancellationToken);
 
-    Task UpdateAsync(User user);
+    void Update(User user);
 
-    Task DeleteAsync(User user);
+    void Delete(User user);
 
-    Task SaveChangesAsync();
+    Task SaveChangesAsync(CancellationToken cancellationToken);
 }

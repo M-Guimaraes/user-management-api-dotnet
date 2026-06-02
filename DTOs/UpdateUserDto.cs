@@ -5,7 +5,8 @@ namespace UserManagementApi.DTOs;
 public class UpdateUserDto
 {
     [MinLength(3)]
-    public string Name { get; set; } = string.Empty;
+    public string? Name { get; set; } = null;
+    
     [EmailAddress]
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; } = null;
 }

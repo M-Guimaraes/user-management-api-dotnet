@@ -11,9 +11,9 @@ public class AuthController(IAuthService authService) : Controller
 {
 
     [HttpPost("register")]
-    public async Task<ActionResult<bool>> Register(RegisterDto dto)
+    public async Task<IActionResult> Register(RegisterDto dto, CancellationToken cancellationToken)
     {
-        bool result = await authService.Register(dto);
+        bool result = await authService.Register(dto, cancellationToken);
 
         if (!result) {
             return BadRequest();
@@ -23,9 +23,9 @@ public class AuthController(IAuthService authService) : Controller
     }
     
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
+    public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto, CancellationToken cancellationToken)
     {
-        AuthResponseDto? result = await authService.Login(dto);
+        AuthResponseDto? result = await authService.Login(dto, cancellationToken);
         
         if (result == null) {
             return Unauthorized();
@@ -35,21 +35,25 @@ public class AuthController(IAuthService authService) : Controller
     }
 
     [HttpPost("refresh")]
-    public async Task<ActionResult<AuthResponseDto>> RefreshToken(RefreshTokenDto dto)
+    public async Task<ActionResult<AuthResponseDto>> RefreshToken(RefreshTokenDto dto, CancellationToken cancellationToken)
     {
-        AuthResponseDto? result =  await authService.RefreshToken(dto);
-        
-        if (result == null) return Unauthorized();
+        AuthResponseDto? result =  await authService.RefreshToken(dto, cancellationToken);
+
+        if (result == null) {
+            return Unauthorized();
+        }
 
         return Ok(result);       
     }
     
     [HttpPost("logout")]
-    public async Task<ActionResult<bool>> Logout(RefreshTokenDto dto)
+    public async Task<IActionResult> Logout(RefreshTokenDto dto, CancellationToken cancellationToken)
     {
-        bool result = await authService.Logout(dto);
-        
-        if (!result) return NotFound();
+        bool result = await authService.Logout(dto, cancellationToken);
+
+        if (!result) {
+            return NotFound();
+        };
         
         return NoContent();
     }

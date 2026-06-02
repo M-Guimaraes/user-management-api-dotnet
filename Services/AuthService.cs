@@ -12,10 +12,10 @@ public class AuthService(
     IJwtService jwtService) : IAuthService
 {
 
-    public async Task<bool> Register(RegisterDto dto)
+    public async Task<bool> Register(RegisterDto dto, CancellationToken cancellationToken)
     {
         
-        User? registered = await userRepository.GetByEmailAsync(dto.Email);
+        User? registered = await userRepository.GetByEmailAsync(dto.Email, cancellationToken);
 
         if (registered != null) {
             return false;
@@ -29,16 +29,16 @@ public class AuthService(
             PasswordHash = passwordHash,
         };
         
-        await userRepository.AddAsync(user);
+        await userRepository.AddAsync(user, cancellationToken);
         
-        await userRepository.SaveChangesAsync();
+        await userRepository.SaveChangesAsync(cancellationToken);
 
         return true;
     }
 
-    public async Task<AuthResponseDto?> Login(LoginDto dto)
+    public async Task<AuthResponseDto?> Login(LoginDto dto, CancellationToken cancellationToken)
     {
-        User? user = await userRepository.GetByEmailAsync(dto.Email);
+        User? user = await userRepository.GetByEmailAsync(dto.Email, cancellationToken);
         
         if (user == null) return null;
 
@@ -49,14 +49,16 @@ public class AuthService(
         string token = jwtService.GenerateToken(user);
         
         string refreshToken = Guid.NewGuid().ToString();
-        
-        await refreshTokenRepository.AddAsync(new RefreshToken {
+
+        var addUser = new RefreshToken {
             UserId = user.Id,
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             Token = refreshToken,
-        });
+        };
         
-        await refreshTokenRepository.SaveChangesAsync();
+        await refreshTokenRepository.AddAsync(addUser, cancellationToken);
+        
+        await refreshTokenRepository.SaveChangesAsync(cancellationToken);
         
         var authUser = mapper.Map<AuthResponseDto>(user);
         
@@ -66,9 +68,9 @@ public class AuthService(
         return authUser;       
     }
 
-    public async Task<AuthResponseDto?> RefreshToken(RefreshTokenDto dto)
+    public async Task<AuthResponseDto?> RefreshToken(RefreshTokenDto dto, CancellationToken cancellationToken)
     {
-        RefreshToken? stored = await refreshTokenRepository.GetByUserTokenAsync(dto.RefreshToken);
+        RefreshToken? stored = await refreshTokenRepository.GetByUserTokenAsync(dto.RefreshToken, cancellationToken);
 
         if (stored == null) return null;
         
@@ -84,9 +86,9 @@ public class AuthService(
         return authUser;      
     }
 
-    public async Task<bool> Logout(RefreshTokenDto dto)
+    public async Task<bool> Logout(RefreshTokenDto dto, CancellationToken cancellationToken)
     {
-        RefreshToken? stored = await refreshTokenRepository.GetByUserTokenAsync(dto.RefreshToken);
+        RefreshToken? stored = await refreshTokenRepository.GetByUserTokenAsync(dto.RefreshToken, cancellationToken);
         
         if (stored == null) return false;
         

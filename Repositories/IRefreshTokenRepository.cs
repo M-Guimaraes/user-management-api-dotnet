@@ -3,9 +3,9 @@ namespace UserManagementApi.Repositories;
 public interface IRefreshTokenRepository
 {
 
-    Task AddAsync(RefreshToken refreshToken);
+    Task AddAsync(RefreshToken refreshToken, CancellationToken cancellationToken);
 
-    Task<RefreshToken?> GetByUserTokenAsync(string token);
+    Task<RefreshToken?> GetByUserTokenAsync(string token, CancellationToken cancellationToken);
 
-    Task SaveChangesAsync();
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

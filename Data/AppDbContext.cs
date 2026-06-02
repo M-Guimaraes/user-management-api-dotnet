@@ -14,9 +14,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // Users
         modelBuilder.Entity<User>().ToTable("users");
         modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
+        modelBuilder.Entity<User>().HasQueryFilter(u => !u.IsDeleted);
         
         // Refresh Tokens
         modelBuilder.Entity<RefreshToken>().ToTable("refresh_tokens");
-        
+        modelBuilder.Entity<RefreshToken>().HasQueryFilter(rt => !rt.User.IsDeleted && rt.Revoked);
+
     }
 }
