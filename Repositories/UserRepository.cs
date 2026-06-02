@@ -68,8 +68,8 @@ public class UserRepository(AppDbContext context) : IUserRepository
         context.Users.Update(user);
     }
 
-    public async Task SaveChangesAsync( CancellationToken cancellationToken = default)
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        await context.SaveChangesAsync(cancellationToken);          
+        await context.SaveChangesAsync(cancellationToken);
     }
 }
