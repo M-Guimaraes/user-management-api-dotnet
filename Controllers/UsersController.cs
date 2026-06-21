@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using UserManagementApi.Common;
 using UserManagementApi.DTOs;
+using UserManagementApi.Exceptions.Http;
 using UserManagementApi.Services;
 
 namespace UserManagementApi.Controllers;
@@ -13,15 +14,14 @@ namespace UserManagementApi.Controllers;
 [Authorize]
 public class UsersController(IUserService userService) : ControllerBase
 {
-
-   
     [HttpGet("{id:int}")]
     public async Task<ActionResult<UserResponseDto>> GetUserById(int id, CancellationToken cancellationToken)
     {
         UserResponseDto? userResponse = await userService.GetByIdAsync(id, cancellationToken);
-        
-        if (userResponse == null)
-            return NotFound();
+
+        if (userResponse is null) {
+            throw new NotFoundException("User not found");
+        }
         
         return Ok(userResponse);
     }

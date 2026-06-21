@@ -2,6 +2,7 @@ using AutoMapper;
 
 using UserManagementApi.Common;
 using UserManagementApi.DTOs;
+using UserManagementApi.Exceptions.Http;
 using UserManagementApi.Repositories;
 
 namespace UserManagementApi.Services;
@@ -23,22 +24,14 @@ public class UserService(IUserRepository userRepository, IMapper mapper) : IUser
 
     public async Task<UserResponseDto?> GetByIdAsync(int id, CancellationToken cancellationToken)
     {
-        User? user = await userRepository.GetByIdAsync(id, cancellationToken);
-
-        if (user == null) {
-            throw new KeyNotFoundException($"User with id {id} not found");
-        }
+        User? user = await GetUserOrThrowAsync(id, cancellationToken);
         
         return mapper.Map<UserResponseDto>(user);
     }
 
     public async Task DeleteAsync(int id, CancellationToken cancellationToken)
     {
-        User? user = await userRepository.GetByIdAsync(id, cancellationToken);
-
-        if (user == null) {
-            throw new KeyNotFoundException($"User with id {id} not found");
-        }
+        User? user = await GetUserOrThrowAsync(id, cancellationToken); 
         
         userRepository.Delete(user);
 
@@ -47,26 +40,21 @@ public class UserService(IUserRepository userRepository, IMapper mapper) : IUser
 
     public async Task UpdateAsync(int id, UpdateUserDto dto, CancellationToken cancellationToken)
     {
-        User? user = await userRepository.GetByIdAsync(id, cancellationToken);
-
-        if (user == null) {
-            throw new KeyNotFoundException($"User with id {id} not found");       
-        }
+        User? user = await GetUserOrThrowAsync(id, cancellationToken);
         
-        if (dto.Name is not null)
-        {
-            user.Name = dto.Name;
-        }
-
-        if (dto.Email is not null)
-        {
-            user.Email = dto.Email;
-        }
-
         mapper.Map(dto, user);
  
-        user.UpdatedAt = DateTime.UtcNow;
-
         await userRepository.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<User> GetUserOrThrowAsync(int id, CancellationToken cancellationToken)
+    {
+        var user = await userRepository.GetByIdAsync(id, cancellationToken);
+
+        if (user is null) {
+            throw new NotFoundException($"User with id {id} not found");
+        }
+
+        return user;
     }
 }

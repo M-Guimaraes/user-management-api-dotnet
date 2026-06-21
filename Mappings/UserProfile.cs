@@ -10,9 +10,9 @@ public class UserProfile : Profile
     {
         CreateMap<User, UserResponseDto>();
         
-        CreateMap<User, CreateUserDto>();
+        CreateMap<CreateUserDto, User>();
         
-        CreateMap<User, UpdateUserDto>()
+        CreateMap<UpdateUserDto, User>()
             .ForAllMembers(opt => 
                 opt.Condition((src, dest, srcMember) => srcMember != null));
 

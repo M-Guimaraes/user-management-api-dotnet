@@ -5,15 +5,27 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 using UserManagementApi.Data;
+using UserManagementApi.Extensions;
 using UserManagementApi.Mappings;
 using UserManagementApi.Repositories;
 using UserManagementApi.Services;
+
+using FluentValidation;
+using FluentValidation.AspNetCore;
+
+using UserManagementApi.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+// FLuent Validation
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<UserValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserValidator>();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
@@ -66,7 +78,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
-
     {
         options.TokenValidationParameters =
             new TokenValidationParameters
@@ -108,7 +119,7 @@ if (app.Environment.IsDevelopment()) {
     app.UseSwaggerUI();
 }
 
-
+app.UseExceptionMiddleware();
 
 app.UseHttpsRedirection();
 

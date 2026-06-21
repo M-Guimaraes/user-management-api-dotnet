@@ -3,6 +3,8 @@ using System.Text;
 using AutoMapper;
 
 using UserManagementApi.DTOs;
+using UserManagementApi.Exceptions;
+using UserManagementApi.Exceptions.Http;
 using UserManagementApi.Repositories;
 
 namespace UserManagementApi.Services;
@@ -13,14 +15,15 @@ public class AuthService(
     IMapper mapper,
     IJwtService jwtService) : IAuthService
 {
+    private const int RefreshTokenExpirationDays = 7;
 
-    public async Task<bool> Register(RegisterDto dto, CancellationToken cancellationToken)
+    public async Task Register(RegisterDto dto, CancellationToken cancellationToken)
     {
         
         User? registered = await userRepository.GetByEmailAsync(dto.Email, cancellationToken);
 
-        if (registered != null) {
-            return false;
+        if (registered is not null) {
+            throw new ConflictException("Email already registered");
         }
         
         string? passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
@@ -32,88 +35,57 @@ public class AuthService(
         };
         
         await userRepository.AddAsync(user, cancellationToken);
-        
         await userRepository.SaveChangesAsync(cancellationToken);
-
-        return true;
     }
 
     public async Task<AuthResponseDto?> Login(LoginDto dto, CancellationToken cancellationToken)
     {
-        User? user = await userRepository.GetByEmailAsync(dto.Email, cancellationToken);
-        
-        if (user == null) return null;
-
-        bool passwordMatch = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
-        
-        if (!passwordMatch) return null;
+        User user = await AuthenticateAsync(dto, cancellationToken);
         
         string token = jwtService.GenerateToken(user);
+        string refreshToken = await CreateRefreshTokenAsync(user.Id, cancellationToken);
         
-        string refreshToken = GenerateSecureToken();
-
-        var addUser = new RefreshToken {
-            UserId = user.Id,
-            ExpiresAt = DateTime.UtcNow.AddDays(7),
-            TokenHash = ComputeHash(refreshToken),
-        };
-        
-        await refreshTokenRepository.AddAsync(addUser, cancellationToken);
-        
-        await refreshTokenRepository.SaveChangesAsync(cancellationToken);
-        
-        var authUser = mapper.Map<AuthResponseDto>(user);
-        
-        authUser.RefreshToken = refreshToken;
-        authUser.Token = token;
-        
-        return authUser;       
+        return CreateAuthResponse(user, token, refreshToken);    
     }
 
     public async Task<AuthResponseDto?> RefreshToken(RefreshTokenDto dto, CancellationToken cancellationToken)
     {
         RefreshToken? stored = await refreshTokenRepository.GetByUserTokenAsync(dto.RefreshToken, cancellationToken);
 
-        if (stored == null) return null;
-        if (stored.Revoked) return null;
-        if (stored.ExpiresAt < DateTime.UtcNow) return null;
+        if (stored is null) {
+            throw new UnauthorizedException("Invalid refresh token");
+        }
+
+        if (stored.Revoked) {
+            throw new UnauthorizedException("Refresh token has been revoked");
+        }
+
+        if (stored.ExpiresAt < DateTime.UtcNow) {
+            throw new UnauthorizedException("Refresh token has expired");
+        }
 
         // rotate refresh token: revoke the old one and create a new one
         stored.Revoked = true;
+        
+        string token = jwtService.GenerateToken(stored.User);
+        string refreshToken = await CreateRefreshTokenAsync(stored.User.Id, cancellationToken);
 
-        string newRefreshToken = GenerateSecureToken();
-
-        var newToken = new RefreshToken
-        {
-            UserId = stored.UserId,
-            ExpiresAt = DateTime.UtcNow.AddDays(7),
-            TokenHash = ComputeHash(newRefreshToken),
-        };
-
-        await refreshTokenRepository.AddAsync(newToken, cancellationToken);
-        await refreshTokenRepository.SaveChangesAsync(cancellationToken);
-
-        var authUser = mapper.Map<AuthResponseDto>(stored.User);
-        authUser.Token = jwtService.GenerateToken(stored.User);
-        authUser.RefreshToken = newRefreshToken;
-
-        return authUser;
+        return CreateAuthResponse(stored.User, token, refreshToken);
     }
 
-    public async Task<bool> Logout(RefreshTokenDto dto, CancellationToken cancellationToken)
+    public async Task Logout(RefreshTokenDto dto, CancellationToken cancellationToken)
     {
         RefreshToken? stored = await refreshTokenRepository.GetByUserTokenAsync(dto.RefreshToken, cancellationToken);
-        
-        if (stored == null) return false;
+
+        if (stored is null) {
+            throw new UnauthorizedException("Invalid refresh token");       
+        }
         
         stored.Revoked = true;
         
         await refreshTokenRepository.SaveChangesAsync(cancellationToken);
-        
-        return true;       
     }
-
-
+    
     private static string ComputeHash(string token)
     {
         using var sha = SHA256.Create();
@@ -129,4 +101,43 @@ public class AuthService(
         return Convert.ToBase64String(data).TrimEnd('=');
     }
 
+    private async Task<string> CreateRefreshTokenAsync(int userId, CancellationToken cancellationToken)
+    {
+        string refreshToken = GenerateSecureToken();
+        
+        await refreshTokenRepository.AddAsync(
+            new RefreshToken
+            {
+                UserId = userId,
+                ExpiresAt = DateTime.UtcNow.AddDays(RefreshTokenExpirationDays),
+                TokenHash = ComputeHash(refreshToken),
+            },
+            cancellationToken
+        );
+
+        await refreshTokenRepository.SaveChangesAsync(cancellationToken);
+        
+        return refreshToken;       
+    }
+
+    private async Task<User> AuthenticateAsync(LoginDto dto, CancellationToken cancellationToken)
+    {
+        User? user = await userRepository.GetByEmailAsync(dto.Email, cancellationToken);
+
+        if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) {
+            throw new UnauthorizedException("Invalid email or password");
+        }
+        
+        return user;      
+    }
+
+    private AuthResponseDto CreateAuthResponse(User user, string jwt, string refreshToken)
+    {
+        var response = mapper.Map<AuthResponseDto>(user);
+        
+        response.Token = jwt;
+        response.RefreshToken = refreshToken;
+        
+        return response;      
+    }
 }

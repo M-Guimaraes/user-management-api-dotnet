@@ -1,42 +1,61 @@
-using System.Text.Json;
+using UserManagementApi.DTOs;
+using UserManagementApi.Exceptions;
 
 namespace UserManagementApi.Middlewares;
 
-public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
+public class ExceptionMiddleware(
+    RequestDelegate next,
+    ILogger<ExceptionMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context)
     {
-        try {
+        try
+        {
             await next(context);
+        }
+        catch (AppException ex)
+        {
+            logger.LogWarning(ex, ex.Message);
 
-        } catch(Exception ex) {
-            logger.LogError(ex, "Internal server error");
-            
-            await HandleExceptionAsync(context, ex);
+            await HandleAppExceptionAsync(context, ex);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ex.Message);
+
+            await HandleUnexpectedExceptionAsync(context);
         }
     }
-    
-    private static async Task HandleExceptionAsync(
+
+    private static async Task HandleAppExceptionAsync(
         HttpContext context,
-        Exception exception)
-
+        AppException exception)
     {
+        context.Response.StatusCode = exception.StatusCode;
         context.Response.ContentType = "application/json";
-        context.Response.StatusCode = exception switch
-        {
-            ArgumentException => StatusCodes.Status400BadRequest,
-            KeyNotFoundException => StatusCodes.Status404NotFound,
-            UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
-            _ => StatusCodes.Status500InternalServerError
-        };
 
-        var response = new
+        await context.Response.WriteAsJsonAsync(
+        new ErrorResponseDto
         {
-            StatusCode = context.Response.StatusCode,
-            Message = exception.Message
-        };
+            StatusCode = exception.StatusCode,
+            Message = exception.Message,
+            TraceId = context.TraceIdentifier,
+        });
+    }
 
-        await context.Response.WriteAsync(
-            JsonSerializer.Serialize(response));
+    private static async Task HandleUnexpectedExceptionAsync(
+        HttpContext context)
+    {
+        context.Response.StatusCode =
+            StatusCodes.Status500InternalServerError;
+
+        context.Response.ContentType = "application/json";
+
+        await context.Response.WriteAsJsonAsync(
+        new ErrorResponseDto
+        {
+            StatusCode = StatusCodes.Status500InternalServerError,
+            Message = "An unexpected error occurred.",
+        });
     }
 }
